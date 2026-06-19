@@ -295,10 +295,12 @@ li strong {
 .item-actions {
   display: flex;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .small-button {
   min-width: 40px;
+  width: 40px;
   min-height: 36px;
   padding: 0 10px;
 }
@@ -344,12 +346,12 @@ li strong {
 
   li {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto auto;
   }
 
   .item-actions {
-    display: grid;
-    grid-column: 1 / -1;
+    display: flex;
+    grid-column: auto;
   }
 }
 
