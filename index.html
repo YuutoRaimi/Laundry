@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laundry App</title>
+  <script>
+    const savedTheme = localStorage.getItem("laundryTrackerTheme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+    if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
+      document.documentElement.classList.add("dark-mode");
+    }
+  </script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<main class="app">
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">Laundry harian</p>
+      <h1>Laundry Tracker</h1>
+    </div>
+
+    <div class="header-actions">
+      <button type="button" class="theme-toggle" onclick="toggleTheme()" id="themeToggle" aria-label="Ganti tema">Dark</button>
+      <button type="button" class="reset" onclick="resetData()">Reset</button>
+    </div>
+  </header>
+
+  <div class="content-grid">
+    <section class="panel">
+      <div class="section-title">
+        <h2>Jenis Barang</h2>
+        <span>Klik untuk tambah pcs</span>
+      </div>
+
+      <div class="item-grid" id="itemTypes"></div>
+
+      <button type="button" class="add-type" onclick="showCustomForm()">+ Tambah Jenis Barang</button>
+
+      <div class="form hidden" id="customForm">
+        <input type="text" id="itemName" placeholder="Contoh: Selimut">
+        <button type="button" onclick="addCustomType()">Tambah</button>
+      </div>
+    </section>
+
+    <section class="panel laundry-panel">
+      <div class="section-title">
+        <h2>Daftar Laundry</h2>
+        <span id="totalItems">0 pcs</span>
+      </div>
+
+      <ul id="list"></ul>
+    </section>
+  </div>
+</main>
+
+<div class="modal-overlay hidden" id="resetModal" role="dialog" aria-modal="true" aria-labelledby="resetTitle" onclick="closeResetModal(event)">
+  <div class="modal">
+    <h2 id="resetTitle">Reset semua data?</h2>
+    <p>Daftar laundry dan jenis barang tambahan akan dihapus.</p>
+
+    <div class="modal-actions">
+      <button type="button" class="cancel-button" onclick="closeResetModal()">Batal</button>
+      <button type="button" class="reset confirm-reset" onclick="confirmResetData()">Reset</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
