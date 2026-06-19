@@ -279,6 +279,10 @@ li {
   border-radius: 8px;
 }
 
+li span {
+  flex: 1;
+}
+
 li:last-child {
   margin-bottom: 0;
 }
@@ -286,6 +290,25 @@ li:last-child {
 li strong {
   color: var(--primary);
   white-space: nowrap;
+}
+
+.item-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.small-button {
+  min-width: 40px;
+  min-height: 36px;
+  padding: 0 10px;
+}
+
+.minus-button {
+  background: var(--danger);
+}
+
+.minus-button:hover {
+  background: var(--danger-hover);
 }
 
 .empty {
@@ -317,6 +340,16 @@ li strong {
 
   .form {
     flex-direction: column;
+  }
+
+  li {
+    display: grid;
+    grid-template-columns: 1fr auto;
+  }
+
+  .item-actions {
+    display: grid;
+    grid-column: 1 / -1;
   }
 }
 

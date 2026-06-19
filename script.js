@@ -28,6 +28,22 @@ function addLaundryItem(name, amount = 1) {
   renderList();
 }
 
+function getItemStep(name) {
+  return name === "Kaos Kaki" ? 2 : 1;
+}
+
+function decreaseLaundryItem(name) {
+  const step = getItemStep(name);
+  laundryItems[name] = (laundryItems[name] || 0) - step;
+
+  if (laundryItems[name] <= 0) {
+    delete laundryItems[name];
+  }
+
+  saveData();
+  renderList();
+}
+
 function addCustomType() {
   const input = document.getElementById("itemName");
   const name = input.value.trim();
@@ -56,7 +72,7 @@ function renderItemTypes() {
 
     button.type = "button";
     button.textContent = name;
-    button.onclick = () => addLaundryItem(name, name === "Kaos Kaki" ? 2 : 1);
+    button.onclick = () => addLaundryItem(name, getItemStep(name));
     itemTypesElement.appendChild(button);
   });
 }
@@ -82,7 +98,26 @@ function renderList() {
 
   Object.entries(laundryItems).forEach(([name, qty]) => {
     const item = document.createElement("li");
-    item.innerHTML = `<span>${name}</span><strong>${qty} pcs</strong>`;
+    const itemName = document.createElement("span");
+    const itemQty = document.createElement("strong");
+    const actions = document.createElement("div");
+    const minusButton = document.createElement("button");
+
+    itemName.textContent = name;
+    itemQty.textContent = `${qty} pcs`;
+
+    actions.className = "item-actions";
+
+    minusButton.type = "button";
+    minusButton.className = "small-button minus-button";
+    minusButton.textContent = "-";
+    minusButton.onclick = () => decreaseLaundryItem(name);
+
+    actions.appendChild(minusButton);
+
+    item.appendChild(itemName);
+    item.appendChild(itemQty);
+    item.appendChild(actions);
     list.appendChild(item);
   });
 
@@ -169,5 +204,5 @@ function updateThemeButton() {
     return;
   }
 
-  themeToggle.textContent = document.documentElement.classList.contains("dark-mode") ? "Dark" : "Light";
+  themeToggle.textContent = document.documentElement.classList.contains("dark-mode") ? "Light" : "Dark";
 }
