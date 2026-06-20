@@ -79,8 +79,42 @@ h2 {
 
 .header-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
   flex-shrink: 0;
+}
+
+.sync-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 10px;
+  color: var(--muted);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sync-status.online {
+  color: #ffffff;
+  background: var(--success);
+  border-color: var(--success);
+}
+
+.sync-status.saving,
+.sync-status.syncing {
+  color: #ffffff;
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.sync-status.offline {
+  color: #ffffff;
+  background: var(--danger);
+  border-color: var(--danger);
 }
 
 .panel {
@@ -267,9 +301,9 @@ ul {
 }
 
 li {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   min-height: 46px;
   padding: 10px 12px;
@@ -296,6 +330,12 @@ li strong {
   display: flex;
   gap: 8px;
   flex-shrink: 0;
+}
+
+.note-input {
+  grid-column: 1 / -1;
+  min-height: 38px;
+  font-size: 14px;
 }
 
 .small-button {
@@ -333,20 +373,21 @@ li strong {
   }
 
   .header-actions {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 
   .header-actions button {
-    width: 76px;
+    width: 100%;
+  }
+
+  .sync-status {
+    grid-column: 1 / -1;
+    justify-content: center;
   }
 
   .form {
     flex-direction: column;
-  }
-
-  li {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
   }
 
   .item-actions {

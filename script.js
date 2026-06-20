@@ -1,5 +1,19 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import {
+  doc,
+  getDoc,
+  getFirestore,
+  onSnapshot,
+  setDoc,
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { firebaseConfig } from "./firebase-config.js";
+
 const STORAGE_KEY = "laundryTrackerData";
 const THEME_KEY = "laundryTrackerTheme";
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const laundryDoc = doc(db, "laundry", "shared-list");
 
 const defaultTypes = [
   "Kemeja",
@@ -15,12 +29,24 @@ const defaultTypes = [
 ];
 
 const laundryItems = {};
+const itemNotes = {};
 let itemTypes = [...defaultTypes];
+let isRemoteReady = false;
 
-loadData();
+loadLocalData();
 loadTheme();
 renderItemTypes();
 renderList();
+startFirestoreSync();
+
+window.addLaundryItem = addLaundryItem;
+window.addCustomType = addCustomType;
+window.showCustomForm = showCustomForm;
+window.resetData = resetData;
+window.confirmResetData = confirmResetData;
+window.closeResetModal = closeResetModal;
+window.toggleTheme = toggleTheme;
+window.updateItemNote = updateItemNote;
 
 function addLaundryItem(name, amount = 1) {
   laundryItems[name] = (laundryItems[name] || 0) + amount;
@@ -38,6 +64,7 @@ function decreaseLaundryItem(name) {
 
   if (laundryItems[name] <= 0) {
     delete laundryItems[name];
+    delete itemNotes[name];
   }
 
   saveData();
@@ -57,9 +84,10 @@ function addCustomType() {
     itemTypes.push(name);
   }
 
+  laundryItems[name] = (laundryItems[name] || 0) + 1;
   renderItemTypes();
   saveData();
-  addLaundryItem(name);
+  renderList();
   input.value = "";
 }
 
@@ -102,6 +130,7 @@ function renderList() {
     const itemQty = document.createElement("strong");
     const actions = document.createElement("div");
     const minusButton = document.createElement("button");
+    const noteInput = document.createElement("input");
 
     itemName.textContent = name;
     itemQty.textContent = `${qty} pcs`;
@@ -113,11 +142,18 @@ function renderList() {
     minusButton.textContent = "-";
     minusButton.onclick = () => decreaseLaundryItem(name);
 
+    noteInput.type = "text";
+    noteInput.className = "note-input";
+    noteInput.placeholder = "Catatan";
+    noteInput.value = itemNotes[name] || "";
+    noteInput.onchange = () => updateItemNote(name, noteInput.value);
+
     actions.appendChild(minusButton);
 
     item.appendChild(itemName);
     item.appendChild(itemQty);
     item.appendChild(actions);
+    item.appendChild(noteInput);
     list.appendChild(item);
   });
 
@@ -132,6 +168,7 @@ function resetData() {
 
 function confirmResetData() {
   Object.keys(laundryItems).forEach((name) => delete laundryItems[name]);
+  Object.keys(itemNotes).forEach((name) => delete itemNotes[name]);
   itemTypes = [...defaultTypes];
   saveData();
   renderItemTypes();
@@ -154,16 +191,74 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-function saveData() {
-  const data = {
-    laundryItems,
-    itemTypes,
-  };
+async function startFirestoreSync() {
+  updateSyncStatus("syncing", "Menyambungkan...");
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  try {
+    const snapshot = await getDoc(laundryDoc);
+
+    if (!snapshot.exists()) {
+      await saveRemoteData();
+    }
+
+    onSnapshot(
+      laundryDoc,
+      (docSnapshot) => {
+        if (!docSnapshot.exists()) {
+          return;
+        }
+
+        isRemoteReady = true;
+        updateSyncStatus("online", "Online");
+        applySavedData(docSnapshot.data());
+        saveLocalData();
+        renderItemTypes();
+        renderList();
+      },
+      (error) => {
+        console.error("Realtime Firestore gagal:", error);
+        updateSyncStatus("offline", "Offline");
+        isRemoteReady = false;
+      }
+    );
+  } catch (error) {
+    console.error("Firestore gagal tersambung:", error);
+    updateSyncStatus("offline", "Offline");
+    isRemoteReady = false;
+  }
 }
 
-function loadData() {
+function saveData() {
+  saveLocalData();
+
+  if (isRemoteReady) {
+    updateSyncStatus("saving", "Menyimpan...");
+    saveRemoteData().catch((error) => {
+      console.error("Data gagal disimpan ke Firestore:", error);
+      updateSyncStatus("offline", "Offline");
+    });
+  }
+}
+
+function saveLocalData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(getCurrentData()));
+}
+
+async function saveRemoteData() {
+  await setDoc(laundryDoc, getCurrentData());
+  updateSyncStatus("online", "Tersimpan");
+}
+
+function getCurrentData() {
+  return {
+    laundryItems: { ...laundryItems },
+    itemNotes: { ...itemNotes },
+    itemTypes,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function loadLocalData() {
   const savedData = localStorage.getItem(STORAGE_KEY);
 
   if (!savedData) {
@@ -171,15 +266,42 @@ function loadData() {
   }
 
   try {
-    const data = JSON.parse(savedData);
-
-    const savedTypes = Array.isArray(data.itemTypes) ? data.itemTypes : [];
-
-    Object.assign(laundryItems, data.laundryItems || {});
-    itemTypes = [...new Set([...defaultTypes, ...savedTypes])];
+    applySavedData(JSON.parse(savedData));
   } catch (error) {
     localStorage.removeItem(STORAGE_KEY);
   }
+}
+
+function applySavedData(data) {
+  const savedTypes = Array.isArray(data.itemTypes) ? data.itemTypes : [];
+
+  Object.keys(laundryItems).forEach((name) => delete laundryItems[name]);
+  Object.keys(itemNotes).forEach((name) => delete itemNotes[name]);
+  Object.assign(laundryItems, data.laundryItems || {});
+  Object.assign(itemNotes, data.itemNotes || {});
+  itemTypes = [...new Set([...defaultTypes, ...savedTypes])];
+}
+
+function updateItemNote(name, note) {
+  if (note.trim()) {
+    itemNotes[name] = note.trim();
+  } else {
+    delete itemNotes[name];
+  }
+
+  saveData();
+  renderList();
+}
+
+function updateSyncStatus(status, text) {
+  const syncStatus = document.getElementById("syncStatus");
+
+  if (!syncStatus) {
+    return;
+  }
+
+  syncStatus.className = `sync-status ${status}`;
+  syncStatus.textContent = text;
 }
 
 function toggleTheme() {
@@ -204,5 +326,5 @@ function updateThemeButton() {
     return;
   }
 
-  themeToggle.textContent = document.documentElement.classList.contains("dark-mode") ? "Light" : "Dark";
+  themeToggle.textContent = document.documentElement.classList.contains("dark-mode") ? "Dark" : "Light";
 }
