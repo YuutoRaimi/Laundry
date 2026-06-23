@@ -129,6 +129,7 @@ function renderList() {
     const itemName = document.createElement("span");
     const itemQty = document.createElement("strong");
     const actions = document.createElement("div");
+    const plusButton = document.createElement("button");
     const minusButton = document.createElement("button");
     const noteInput = document.createElement("input");
 
@@ -136,6 +137,11 @@ function renderList() {
     itemQty.textContent = `${qty} pcs`;
 
     actions.className = "item-actions";
+
+    plusButton.type = "button";
+    plusButton.className = "small-button plus-button";
+    plusButton.textContent = "+";
+    plusButton.onclick = () => addLaundryItem(name, getItemStep(name));
 
     minusButton.type = "button";
     minusButton.className = "small-button minus-button";
@@ -148,6 +154,7 @@ function renderList() {
     noteInput.value = itemNotes[name] || "";
     noteInput.onchange = () => updateItemNote(name, noteInput.value);
 
+    actions.appendChild(plusButton);
     actions.appendChild(minusButton);
 
     item.appendChild(itemName);
@@ -326,5 +333,5 @@ function updateThemeButton() {
     return;
   }
 
-  themeToggle.textContent = document.documentElement.classList.contains("dark-mode") ? "Dark" : "Light";
+  themeToggle.textContent = document.documentElement.classList.contains("dark-mode") ? "Light" : "Dark";
 }

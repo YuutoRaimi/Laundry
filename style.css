@@ -345,6 +345,14 @@ li strong {
   padding: 0 10px;
 }
 
+.plus-button {
+  background: var(--success);
+}
+
+.plus-button:hover {
+  background: var(--success-hover);
+}
+
 .minus-button {
   background: var(--danger);
 }
